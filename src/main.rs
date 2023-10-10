@@ -1,34 +1,43 @@
 #![warn(clippy::pedantic)]
 
-mod resolver;
+mod resolvers;
+mod types;
 
-use resolver::Resolver;
+use std::collections::HashMap;
 
-use anyhow::Result;
+use types::{DugResult, Resolution};
+
+use anyhow::{ensure, Context, Result};
 use clap::Parser;
-use prettytable::{format, row, Table};
+use futures_util::future::join_all;
+use serde_json::Value as JSValue;
+use tabled::{
+    builder::Builder,
+    row,
+    settings::{themes::ColumnNames, Style},
+};
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    name: String,
+    #[arg(short, long)]
+    json: bool,
+
+    names: Vec<String>,
 }
 
-async fn dug_host(hostname: &str) -> Vec<(String, String)> {
-    let resolver = Resolver::new(hostname);
-
-    let (resolv, all_resolve, dns, dig, drill) = tokio::join!(
-        resolver.resolv_conf(),
-        resolver.exhaustive_resolv_conf(),
-        resolver.dns(),
-        resolver.dig(),
-        resolver.drill(),
+async fn dug_host(name: &str) -> Vec<Resolution> {
+    let (local, all_resolve, dns, dig, drill) = tokio::join!(
+        resolvers::local(name),
+        resolvers::exhaustive_resolv_conf(name),
+        resolvers::dns(name),
+        resolvers::dig(name),
+        resolvers::drill(name),
     );
-    let os = resolver.os();
 
     let all = dns
         .into_iter()
-        .chain([os, resolv])
+        .chain(local)
         .chain(all_resolve)
         .chain(dig)
         .chain(drill);
@@ -36,22 +45,57 @@ async fn dug_host(hostname: &str) -> Vec<(String, String)> {
     all.collect()
 }
 
+/// Display resolutions for host as a list of JSON objects
+fn render_json(resolutions: Vec<Resolution>) -> Result<String> {
+    let obj = resolutions.into_iter().collect::<Vec<_>>();
+    Ok(serde_json::to_string_pretty(&obj)?)
+}
+
+/// Display resolutions for host in a pretty-printed table
+fn render_text(name: &str, resolutions: Vec<Resolution>) -> Result<String> {
+    ensure!(!resolutions.is_empty(), "Resolution set is empty");
+
+    // set hostname as header
+    let mut builder = Builder::from(row![name]);
+
+    for r in resolutions {
+        let results = match r.result {
+            DugResult::Records(recs) => recs.join("\n"),
+            DugResult::Failure(fail) => fail,
+        };
+        builder.push_record(vec![r.source, results]);
+    }
+
+    let mut table = builder.build();
+    table.with(Style::modern()).with(ColumnNames::default());
+
+    Ok(table.to_string())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let name = args.name;
-    let pairs = dug_host(&name).await;
+    let request_set = args.names.iter().map(|name| dug_host(name));
+    let resolution_set = join_all(request_set).await;
 
-    let mut tab = Table::new();
-    tab.set_format(*format::consts::FORMAT_CLEAN);
-    tab.set_titles(row![bH2c->name]);
-
-    for (source, output) in pairs {
-        tab.add_row(row![source, output]);
+    if args.json {
+        let all_resolutions: Vec<Resolution> = resolution_set
+            .into_iter()
+            .reduce(|mut all, res| {
+                all.extend(res);
+                all
+            })
+            .context("Resolution set unexpectedly empty")?;
+        let output = render_json(all_resolutions)?;
+        println!("{output}");
+    } else {
+        for resolutions in resolution_set {
+            ensure!(!resolutions.is_empty(), "Resolution set unexpectedly empty");
+            let name = resolutions[0].name.clone();
+            println!("{}", render_text(&name, resolutions)?);
+        }
     }
-
-    tab.printstd();
 
     Ok(())
 }
