@@ -3,14 +3,11 @@
 mod resolvers;
 mod types;
 
-use std::collections::HashMap;
-
 use types::{DugResult, Resolution};
 
 use anyhow::{ensure, Context, Result};
 use clap::Parser;
 use futures_util::future::join_all;
-use serde_json::Value as JSValue;
 use tabled::{
     builder::Builder,
     row,
