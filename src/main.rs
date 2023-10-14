@@ -5,7 +5,7 @@ mod types;
 
 use types::{DugResult, Resolution};
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{ensure, Result};
 use clap::Parser;
 use futures_util::future::join_all;
 use tabled::{
@@ -23,6 +23,9 @@ struct Args {
     names: Vec<String>,
 }
 
+/// Resolves a given `name` using all the listed resolvers.
+///
+/// Returns a vector of all resolutions, successful or failed.
 async fn dug_host(name: &str) -> Vec<Resolution> {
     let (local, all_resolve, dns, dig, drill) = tokio::join!(
         resolvers::local(name),
@@ -42,14 +45,10 @@ async fn dug_host(name: &str) -> Vec<Resolution> {
     all.collect()
 }
 
-/// Display resolutions for host as a list of JSON objects
-fn render_json(resolutions: Vec<Resolution>) -> Result<String> {
-    let obj = resolutions.into_iter().collect::<Vec<_>>();
-    Ok(serde_json::to_string_pretty(&obj)?)
-}
-
 /// Display resolutions for host in a pretty-printed table
-fn render_text(name: &str, resolutions: Vec<Resolution>) -> Result<String> {
+///
+/// Renders a table with the given `name` as its header, and a row for each `Resolution`.
+fn render_resolution_table(name: &str, resolutions: Vec<Resolution>) -> Result<String> {
     ensure!(!resolutions.is_empty(), "Resolution set is empty");
 
     // set hostname as header
@@ -77,20 +76,14 @@ async fn main() -> Result<()> {
     let resolution_set = join_all(request_set).await;
 
     if args.json {
-        let all_resolutions: Vec<Resolution> = resolution_set
-            .into_iter()
-            .reduce(|mut all, res| {
-                all.extend(res);
-                all
-            })
-            .context("Resolution set unexpectedly empty")?;
-        let output = render_json(all_resolutions)?;
-        println!("{output}");
+        let all_resolutions: Vec<Resolution> = resolution_set.into_iter().flatten().collect();
+        println!("{}", serde_json::to_string_pretty(&all_resolutions)?);
     } else {
         for resolutions in resolution_set {
             ensure!(!resolutions.is_empty(), "Resolution set unexpectedly empty");
+
             let name = resolutions[0].name.clone();
-            println!("{}", render_text(&name, resolutions)?);
+            println!("{}", render_resolution_table(&name, resolutions)?);
         }
     }
 
