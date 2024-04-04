@@ -2,11 +2,47 @@
 
 Name resolution aggregator
 
-# Sample Output
+# Synopsis
 
-## Text
+`dug HOSTNAME [HOSTNAME [HOSTNAME ...]]`
+`dug --json HOSTNAME [HOSTNAME [HOSTNAME ...]]`
+
+# Options
+
+# Description
+
+`dug` is designed to be an _exhaustive_ name lookup tool, looking up the given hostname(s) using any
+method available in the tool or on the system.
+
+Some methods/sources used are:
+
+- The local host's configured resolver
+    - e.g., gethostname(3), gethostbyname(3), getnameinfo(3), etc.
+- Major public DNS resolvers:
+    - Cloudflare
+    - Google
+    - Quad9
+- A simulated nslookup
+    - Works by parsing `/etc/resolv.conf` (if present) and querying the hosts found.
+    - May be significantly different from OS-based resolution.
+
+`dug` will also use external utilities such as `dig` (from [BIND9][bind9]) or `drill` (from
+[ldns][drill]) if found on the `$PATH`.
+
+Resolvers are tried concurrently where possible, and results are aggregated in either a
+pretty-printed ASCII view, or as JSON output suitable for consumption by [jq][jq].
+
+[bind9]: https://www.isc.org/bind/
+[drill]: https://www.nlnetlabs.nl/projects/ldns/about/
+[jq]: https://jqlang.github.io/jq/
+
+# Examples
+
+## Example: Text
 
 ```
+$ dug aws.amazon.com www.kame.net
+
 ┌aws.amazon.com─────────────────┬───────────────────────────────────────┐
 │ Cloudflare DNS                │ 18.155.190.47                         │
 ├───────────────────────────────┼───────────────────────────────────────┤
@@ -78,9 +114,10 @@ Name resolution aggregator
 └───────────────────────────────┴────────────────────────────────────┘
 ```
 
-## JSON
+## Example: JSON
 
 ```
+$ dug --json aws.amazon.com
 [
   {
     "name": "aws.amazon.com",
@@ -137,96 +174,31 @@ Name resolution aggregator
       "dr49lng3n1n2s.cloudfront.net.",
       "18.155.190.47"
     ]
-  },
-  {
-    "name": "aws.amazon.com",
-    "source": "AAAA (dig)",
-    "records": [
-      "tp.8e49140c2-frontier.amazon.com.",
-      "dr49lng3n1n2s.cloudfront.net.",
-      "2600:9000:24bb:d800:1c:a813:8512:c241",
-      "2600:9000:24bb:6200:1c:a813:8512:c241",
-      "2600:9000:24bb:da00:1c:a813:8512:c241",
-      "2600:9000:24bb:e400:1c:a813:8512:c241",
-      "2600:9000:24bb:b400:1c:a813:8512:c241",
-      "2600:9000:24bb:1200:1c:a813:8512:c241",
-      "2600:9000:24bb:7c00:1c:a813:8512:c241",
-      "2600:9000:24bb:a600:1c:a813:8512:c241"
-    ]
-  },
-  {
-    "name": "aws.amazon.com",
-    "source": "drill",
-    "failure": "deadline has elapsed"
-  },
-  {
-    "name": "www.kame.net",
-    "source": "Quad9 DNS",
-    "records": [
-      "210.155.141.200"
-    ]
-  },
-  {
-    "name": "www.kame.net",
-    "source": "Cloudflare DNS",
-    "records": [
-      "210.155.141.200"
-    ]
-  },
-  {
-    "name": "www.kame.net",
-    "source": "Google DNS",
-    "records": [
-      "210.155.141.200"
-    ]
-  },
-  {
-    "name": "www.kame.net",
-    "source": "OS resolution",
-    "records": [
-      "210.155.141.200"
-    ]
-  },
-  {
-    "name": "www.kame.net",
-    "source": "simulated nslookup",
-    "records": [
-      "210.155.141.200"
-    ]
-  },
-  {
-    "name": "www.kame.net",
-    "source": "resolv.conf server[127.0.0.1]",
-    "failure": "Timed out after 7s"
-  },
-  {
-    "name": "www.kame.net",
-    "source": "resolv.conf server[10.7.0.1]",
-    "records": [
-      "210.155.141.200"
-    ]
-  },
-  {
-    "name": "www.kame.net",
-    "source": "A (dig)",
-    "records": [
-      "mango.itojun.org.",
-      "210.155.141.200"
-    ]
-  },
-  {
-    "name": "www.kame.net",
-    "source": "AAAA (dig)",
-    "records": [
-      "mango.itojun.org.",
-      "2001:2f0:0:8800:226:2dff:fe0b:4311",
-      "2001:2f0:0:8800::1:1"
-    ]
-  },
-  {
-    "name": "www.kame.net",
-    "source": "drill",
-    "failure": "deadline has elapsed"
   }
 ]
+
 ```
+## Example: use with `jq`
+
+Collect all unique records returned by all resolvers.
+```
+$ dug -j aws.amazon.com | jq -r '[.[].records | select(. != null) .[]] | unique .[]'
+13.35.127.119
+2600:9000:21c4:3000:1c:a813:8513:e1c1
+2600:9000:21c4:6e00:1c:a813:8513:e1c1
+2600:9000:21c4:9200:1c:a813:8513:e1c1
+2600:9000:21c4:b400:1c:a813:8513:e1c1
+2600:9000:21c4:b600:1c:a813:8513:e1c1
+2600:9000:21c4:d600:1c:a813:8513:e1c1
+2600:9000:21c4:e400:1c:a813:8513:e1c1
+2600:9000:21c4:e600:1c:a813:8513:e1c1
+dr49lng3n1n2s.cloudfront.net.
+tp.8e49140c2-frontier.amazon.com.
+```
+
+This looks busy, but here's the process:
+1. `dug` outputs an array of JSON objects
+2. `jq` extracts the `records` property of each, which is an array of IPs
+3. strip the `null` values; ie, ignore unsuccessful resolutions
+4. collect all the results into a single array
+5. strip duplicate values

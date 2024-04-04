@@ -20,7 +20,8 @@ struct Args {
     #[arg(short, long)]
     json: bool,
 
-    names: Vec<String>,
+    #[arg(required = true)]
+    hostnames: Vec<String>,
 }
 
 /// Resolves a given `name` using all the listed resolvers.
@@ -72,7 +73,7 @@ fn render_resolution_table(name: &str, resolutions: Vec<Resolution>) -> Result<S
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let request_set = args.names.iter().map(|name| dug_host(name));
+    let request_set = args.hostnames.iter().map(|name| dug_host(name));
     let resolution_set = join_all(request_set).await;
 
     if args.json {
