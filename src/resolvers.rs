@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 use std::net::{SocketAddr, ToSocketAddrs};
-use std::string::ToString;
 use std::time::Duration;
-
-use crate::types::{DugResult, Resolution};
 
 use anyhow::{anyhow, bail, Context, Result};
 use futures_util::future;
@@ -12,6 +9,8 @@ use trust_dns_resolver::{
     config::{NameServerConfig, ResolverConfig, ResolverOpts},
     system_conf, TokioAsyncResolver,
 };
+
+use crate::types::{DugResult, Resolution};
 
 pub const LOOKUP_TIMEOUT: Duration = Duration::from_millis(7_000);
 
