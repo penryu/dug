@@ -1,3 +1,127 @@
+//! An exhaustive name resolution aggregator
+//!
+//! `dug` is designed to be an _exhaustive_ name lookup tool, looking up the given hostname(s)
+//! using any method available in the tool or on the system.
+//!
+//! Some methods/sources used are:
+//!
+//! - The local host's configured resolver
+//!     - e.g., gethostname(3), gethostbyname(3), getnameinfo(3), etc.
+//! - Major public DNS resolvers:
+//!     - Cloudflare
+//!     - Google
+//!     - Quad9
+//! - A simulated nslookup
+//!     - Works by parsing `/etc/resolv.conf` (if present) and querying the hosts found.
+//!     - May be significantly different from OS-based resolution.
+//!
+//! `dug` will also use external utilities such as `dig` (from [BIND9][bind9]) or `drill` (from
+//! [ldns][drill]) if found on the `$PATH`.
+//!
+//! Resolvers are tried concurrently where possible, and results are aggregated in either a
+//! pretty-printed ASCII view, or as JSON output suitable for consumption by [jq][jq].
+//!
+//! [bind9]: https://www.isc.org/bind/
+//! [drill]: https://www.nlnetlabs.nl/projects/ldns/about/
+//! [jq]: https://jqlang.github.io/jq/
+//!
+//! # Examples
+//!
+//! ```
+//! $ dug archive.org
+//! ┌archive.org───────────────────┬───────────────┐
+//! │ Cloudflare DNS               │ 207.241.224.2 │
+//! ├──────────────────────────────┼───────────────┤
+//! │ Google DNS                   │ 207.241.224.2 │
+//! ├──────────────────────────────┼───────────────┤
+//! │ Quad9 DNS                    │ 207.241.224.2 │
+//! ├──────────────────────────────┼───────────────┤
+//! │ OS resolution                │ 207.241.224.2 │
+//! ├──────────────────────────────┼───────────────┤
+//! │ simulated nslookup           │ 207.241.224.2 │
+//! ├──────────────────────────────┼───────────────┤
+//! │ resolv.conf server[10.7.0.1] │ 207.241.224.2 │
+//! ├──────────────────────────────┼───────────────┤
+//! │ A (dig)                      │ 207.241.224.2 │
+//! ├──────────────────────────────┼───────────────┤
+//! │ AAAA (dig)                   │               │
+//! ├──────────────────────────────┼───────────────┤
+//! │ A (drill)                    │ 207.241.224.2 │
+//! ├──────────────────────────────┼───────────────┤
+//! │ AAAA (drill)                 │               │
+//! └──────────────────────────────┴───────────────┘
+//!
+//! $ dug --json archive.org
+//! [
+//!   {
+//!     "name": "archive.org",
+//!     "source": "Quad9 DNS",
+//!     "records": [
+//!       "207.241.224.2"
+//!     ]
+//!   },
+//!   {
+//!     "name": "archive.org",
+//!     "source": "Cloudflare DNS",
+//!     "records": [
+//!       "207.241.224.2"
+//!     ]
+//!   },
+//!   {
+//!     "name": "archive.org",
+//!     "source": "Google DNS",
+//!     "records": [
+//!       "207.241.224.2"
+//!     ]
+//!   },
+//!   {
+//!     "name": "archive.org",
+//!     "source": "OS resolution",
+//!     "records": [
+//!       "207.241.224.2"
+//!     ]
+//!   },
+//!   {
+//!     "name": "archive.org",
+//!     "source": "simulated nslookup",
+//!     "records": [
+//!       "207.241.224.2"
+//!     ]
+//!   },
+//!   {
+//!     "name": "archive.org",
+//!     "source": "resolv.conf server[10.7.0.1]",
+//!     "records": [
+//!       "207.241.224.2"
+//!     ]
+//!   },
+//!   {
+//!     "name": "archive.org",
+//!     "source": "A (dig)",
+//!     "records": [
+//!       "207.241.224.2"
+//!     ]
+//!   },
+//!   {
+//!     "name": "archive.org",
+//!     "source": "AAAA (dig)",
+//!     "records": []
+//!   },
+//!   {
+//!     "name": "archive.org",
+//!     "source": "A (drill)",
+//!     "records": [
+//!       "207.241.224.2"
+//!     ]
+//!   },
+//!   {
+//!     "name": "archive.org",
+//!     "source": "AAAA (drill)",
+//!     "records": []
+//!   }
+//! ]
+//! ```
+
 #![warn(clippy::pedantic)]
 
 mod resolvers;
@@ -14,6 +138,7 @@ use tabled::{
     settings::{themes::ColumnNames, Style},
 };
 
+/// Command line arguments.
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 struct Args {
