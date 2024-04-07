@@ -2,6 +2,10 @@
 name = "dug"
 version = "0.3.2"
 edition = "2021"
+license-file = "LICENSE"
+documentation = "https://docs.rs/crate/dug"
+homepage = "https://github.com/penryu/dug"
+repository = "https://github.com/penryu/dug"
 
 [dependencies]
 anyhow = "*"
