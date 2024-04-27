@@ -5,6 +5,7 @@ Name resolution aggregator
 # Synopsis
 
 `dug HOSTNAME [HOSTNAME [HOSTNAME ...]]`
+
 `dug --json HOSTNAME [HOSTNAME [HOSTNAME ...]]`
 
 # Options
