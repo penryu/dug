@@ -37,6 +37,27 @@ pretty-printed ASCII view, or as JSON output suitable for consumption by [jq][jq
 [drill]: https://www.nlnetlabs.nl/projects/ldns/about/
 [jq]: https://jqlang.github.io/jq/
 
+
+# Installation
+
+## Build from source
+
+If you already have a Rust toolchain installed, you can simply:
+
+```bash
+cargo install dug
+```
+
+The simplest way to install a Rust toolchain is with [rustup][rustup].
+
+
+## github
+
+_Coming soon._
+
+[rustup]: https://rust-lang.github.io/rustup/installation/other.html
+
+
 # Examples
 
 ## Example: Text
