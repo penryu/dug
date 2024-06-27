@@ -1,7 +1,7 @@
 # Examples
 
 
-## Example: Table output
+## Table output
 
 ```
 $ dug wikipedia.org www.kame.net
@@ -52,7 +52,7 @@ $ dug wikipedia.org www.kame.net
 └──────────────────────────────┴────────────────────────────────────┘
 ```
 
-## Example: JSON output
+## JSON output
 
 ```
 $ dug --json wikipedia.org
@@ -117,7 +117,7 @@ $ dug --json wikipedia.org
 ]
 ```
 
-## Example: ASCII text output
+## ASCII text output
 
 ```
 $ dug -a wikipedia.org
@@ -155,7 +155,7 @@ Source:	drill
 Result:	198.35.26.96 2620:0:863:ed1a::1
 ```
 
-## Example: Get only the Google DNS results for a set of hostnames
+## Get only the Google DNS results for a set of hostnames
 
 ```
 $ dug -j abc.com cbs.com nbc.com | jq -cr \
@@ -165,7 +165,7 @@ cbs.com 34.149.41.86
 nbc.com 23.67.33.102 23.67.33.74
 ```
 
-## Example: Extract only the resolved IPs with `jq`
+## Extract only the resolved IPs with `jq`
 
 ```
 $ dug -j google.com | jq -r 'map(select(.records).records) | flatten | unique .[]'
