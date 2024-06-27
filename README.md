@@ -13,14 +13,15 @@ Usage: `dug [OPTIONS] <HOSTNAMES>...`
 
 The following options are available:
 
-Arguments:
-  <HOSTNAMES>...
+    Arguments:
+      [HOSTNAMES]...
 
-Options:
-  -a, --ascii    Format results as simple ASCII text
-  -j, --json     Format results as structured JSON text
-  -h, --help     Print help
-  -V, --version  Print version
+    Options:
+
+        -a, --ascii    Format results as simple ASCII text
+        -j, --json     Format results as structured JSON text
+        -h, --help     Print help
+        -V, --version  Print version
 
 
 # Description
@@ -77,7 +78,7 @@ _Coming soon._
 # Examples
 
 
-## Example: Text
+## Example: Table output
 
 ```
 $ dug wikipedia.org www.kame.net
@@ -128,7 +129,7 @@ $ dug wikipedia.org www.kame.net
 └──────────────────────────────┴────────────────────────────────────┘
 ```
 
-## Example: JSON
+## Example: JSON output
 
 ```
 $ dug --json wikipedia.org
@@ -190,8 +191,46 @@ $ dug --json wikipedia.org
     ]
   }
 ]
+```
+
+## Example: ASCII text output
 
 ```
+$ dug -a wikipedia.org
+
+Name:	wikipedia.org
+Source:	Cloudflare DNS
+Result:	198.35.26.96
+
+Name:	wikipedia.org
+Source:	Quad9 DNS
+Result:	198.35.26.96
+
+Name:	wikipedia.org
+Source:	Google DNS
+Result:	198.35.26.96
+
+Name:	wikipedia.org
+Source:	OS resolution
+Result:	198.35.26.96
+
+Name:	wikipedia.org
+Source:	simulated nslookup
+Result:	198.35.26.96
+
+Name:	wikipedia.org
+Source:	resolv.conf server[10.0.0.1]
+Result:	198.35.26.96
+
+Name:	wikipedia.org
+Source:	dig
+Result:	198.35.26.96 2620:0:863:ed1a::1
+
+Name:	wikipedia.org
+Source:	drill
+Result:	198.35.26.96 2620:0:863:ed1a::1
+```
+
 ## Example: Get only the Google DNS results for a set of hostnames
 
 ```
