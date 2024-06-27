@@ -89,43 +89,45 @@ pub async fn dns(name: &str) -> Vec<Resolution> {
 }
 
 /// Looks up a name using bind-tools dig
-pub async fn dig(name: &str) -> Vec<Resolution> {
-    let desc4 = "A (dig)";
-    let desc6 = "AAAA (dig)";
-    let ip4_args = &["+short", name, "A"];
-    let ip6_args = &["+short", name, "AAAA"];
-    let (ip4_lines, ip6_lines) = match tokio::try_join!(
-        timeout(LOOKUP_TIMEOUT, command_output("dig", ip4_args)),
-        timeout(LOOKUP_TIMEOUT, command_output("dig", ip6_args)),
+pub async fn dig(name: &str) -> Resolution {
+    let args_v4 = &["+short", name, "A"];
+    let args_v6 = &["+short", name, "AAAA"];
+
+    let result = match tokio::try_join!(
+        timeout(LOOKUP_TIMEOUT, command_output("dig", args_v4)),
+        timeout(LOOKUP_TIMEOUT, command_output("dig", args_v6)),
     ) {
-        Ok(pair) => pair,
-        Err(e) => return vec![Resolution::with_err(name, "dig", e.into())],
+        Ok((Ok(mut recs), Ok(recs_v6))) => {
+            recs.extend(recs_v6);
+            DugResult::from_records(recs)
+        }
+        Ok((Ok(recs), _) | (_, Ok(recs))) => DugResult::from_records(recs),
+        Ok((Err(e4), Err(_))) => DugResult::from_err(e4),
+        Err(e) => DugResult::from_err(e.into()),
     };
 
-    vec![
-        Resolution::new(name, desc4, DugResult::from(ip4_lines)),
-        Resolution::new(name, desc6, DugResult::from(ip6_lines)),
-    ]
+    Resolution::new(name, "dig", result)
 }
 
 /// Looks up a name using ldns drill
-pub async fn drill(name: &str) -> Vec<Resolution> {
-    let desc4 = "A (drill)";
-    let desc6 = "AAAA (drill)";
-    let ip4_args = &["-Q", name, "A"];
-    let ip6_args = &["-Q", name, "AAAA"];
-    let (ip4_lines, ip6_lines) = match tokio::try_join!(
-        timeout(LOOKUP_TIMEOUT, command_output("drill", ip4_args)),
-        timeout(LOOKUP_TIMEOUT, command_output("drill", ip6_args)),
+pub async fn drill(name: &str) -> Resolution {
+    let args_v4 = &["-Q", name, "A"];
+    let args_v6 = &["-Q", name, "AAAA"];
+
+    let result = match tokio::try_join!(
+        timeout(LOOKUP_TIMEOUT, command_output("drill", args_v4)),
+        timeout(LOOKUP_TIMEOUT, command_output("drill", args_v6)),
     ) {
-        Ok(pair) => pair,
-        Err(e) => return vec![Resolution::with_err(name, "drill", e.into())],
+        Ok((Ok(mut recs), Ok(recs_v6))) => {
+            recs.extend(recs_v6);
+            DugResult::from_records(recs)
+        }
+        Ok((Ok(recs), _) | (_, Ok(recs))) => DugResult::from_records(recs),
+        Ok((Err(e4), Err(_))) => DugResult::from_err(e4),
+        Err(e) => DugResult::from_err(e.into()),
     };
 
-    vec![
-        Resolution::new(name, desc4, DugResult::from(ip4_lines)),
-        Resolution::new(name, desc6, DugResult::from(ip6_lines)),
-    ]
+    Resolution::new(name, "drill", result)
 }
 
 // Private utility functions

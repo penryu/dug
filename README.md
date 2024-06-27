@@ -2,13 +2,26 @@
 
 Name resolution aggregator
 
+
 # Synopsis
 
-`dug HOSTNAME [HOSTNAME [HOSTNAME ...]]`
+Usage: `dug [OPTIONS] <HOSTNAMES>...`
 
-`dug --json HOSTNAME [HOSTNAME [HOSTNAME ...]]`
+
 
 # Options
+
+The following options are available:
+
+Arguments:
+  <HOSTNAMES>...
+
+Options:
+  -a, --ascii    Format results as simple ASCII text
+  -j, --json     Format results as structured JSON text
+  -h, --help     Print help
+  -V, --version  Print version
+
 
 # Description
 
@@ -31,14 +44,17 @@ Some methods/sources used are:
 [ldns][drill]) if found on the `$PATH`.
 
 Resolvers are tried concurrently where possible, and results are aggregated in either a
-pretty-printed ASCII view, or as JSON output suitable for consumption by [jq][jq].
+pretty-printed ASCII view, or as JSON output suitable for consumption by [jq][jq]. See
+the [Options] for more info.
 
 [bind9]: https://www.isc.org/bind/
 [drill]: https://www.nlnetlabs.nl/projects/ldns/about/
 [jq]: https://jqlang.github.io/jq/
+[options]: #options
 
 
 # Installation
+
 
 ## Build from source
 
@@ -60,86 +76,62 @@ _Coming soon._
 
 # Examples
 
+
 ## Example: Text
 
 ```
-$ dug aws.amazon.com www.kame.net
+$ dug wikipedia.org www.kame.net
 
-┌aws.amazon.com─────────────────┬───────────────────────────────────────┐
-│ Cloudflare DNS                │ 18.155.190.47                         │
-├───────────────────────────────┼───────────────────────────────────────┤
-│ Quad9 DNS                     │ 18.155.190.47                         │
-├───────────────────────────────┼───────────────────────────────────────┤
-│ Google DNS                    │ 18.155.190.47                         │
-├───────────────────────────────┼───────────────────────────────────────┤
-│ OS resolution                 │ 18.155.190.47                         │
-├───────────────────────────────┼───────────────────────────────────────┤
-│ simulated nslookup            │ 18.155.190.47                         │
-├───────────────────────────────┼───────────────────────────────────────┤
-│ resolv.conf server[10.7.0.1]  │ 18.155.190.47                         │
-├───────────────────────────────┼───────────────────────────────────────┤
-│ resolv.conf server[127.0.0.1] │ Timed out after 7s                    │
-├───────────────────────────────┼───────────────────────────────────────┤
-│ A (dig)                       │ tp.8e49140c2-frontier.amazon.com.     │
-│                               │ dr49lng3n1n2s.cloudfront.net.         │
-│                               │ 18.155.190.47                         │
-├───────────────────────────────┼───────────────────────────────────────┤
-│ AAAA (dig)                    │ tp.8e49140c2-frontier.amazon.com.     │
-│                               │ dr49lng3n1n2s.cloudfront.net.         │
-│                               │ 2600:9000:24bb:9200:1c:a813:8512:c241 │
-│                               │ 2600:9000:24bb:e200:1c:a813:8512:c241 │
-│                               │ 2600:9000:24bb:b000:1c:a813:8512:c241 │
-│                               │ 2600:9000:24bb:4600:1c:a813:8512:c241 │
-│                               │ 2600:9000:24bb:e600:1c:a813:8512:c241 │
-│                               │ 2600:9000:24bb:200:1c:a813:8512:c241  │
-│                               │ 2600:9000:24bb:5e00:1c:a813:8512:c241 │
-│                               │ 2600:9000:24bb:be00:1c:a813:8512:c241 │
-├───────────────────────────────┼───────────────────────────────────────┤
-│ A (drill)                     │ tp.8e49140c2-frontier.amazon.com.     │
-│                               │ dr49lng3n1n2s.cloudfront.net.         │
-│                               │ 18.155.190.47                         │
-├───────────────────────────────┼───────────────────────────────────────┤
-│ AAAA (drill)                  │ tp.8e49140c2-frontier.amazon.com.     │
-│                               │ dr49lng3n1n2s.cloudfront.net.         │
-│                               │ 2600:9000:24bb:6800:1c:a813:8512:c241 │
-│                               │ 2600:9000:24bb:2200:1c:a813:8512:c241 │
-│                               │ 2600:9000:24bb:bc00:1c:a813:8512:c241 │
-│                               │ 2600:9000:24bb:200:1c:a813:8512:c241  │
-│                               │ 2600:9000:24bb:dc00:1c:a813:8512:c241 │
-│                               │ 2600:9000:24bb:cc00:1c:a813:8512:c241 │
-│                               │ 2600:9000:24bb:5200:1c:a813:8512:c241 │
-│                               │ 2600:9000:24bb:7000:1c:a813:8512:c241 │
-└───────────────────────────────┴───────────────────────────────────────┘
-┌www.kame.net───────────────────┬────────────────────────────────────┐
-│ Google DNS                    │ 210.155.141.200                    │
-├───────────────────────────────┼────────────────────────────────────┤
-│ Quad9 DNS                     │ 210.155.141.200                    │
-├───────────────────────────────┼────────────────────────────────────┤
-│ Cloudflare DNS                │ 210.155.141.200                    │
-├───────────────────────────────┼────────────────────────────────────┤
-│ OS resolution                 │ 210.155.141.200                    │
-├───────────────────────────────┼────────────────────────────────────┤
-│ simulated nslookup            │ 210.155.141.200                    │
-├───────────────────────────────┼────────────────────────────────────┤
-│ resolv.conf server[127.0.0.1] │ Timed out after 7s                 │
-├───────────────────────────────┼────────────────────────────────────┤
-│ resolv.conf server[10.7.0.1]  │ 210.155.141.200                    │
-├───────────────────────────────┼────────────────────────────────────┤
-│ A (dig)                       │ mango.itojun.org.                  │
-│                               │ 210.155.141.200                    │
-├───────────────────────────────┼────────────────────────────────────┤
-│ AAAA (dig)                    │ mango.itojun.org.                  │
-│                               │ 2001:2f0:0:8800::1:1               │
-│                               │ 2001:2f0:0:8800:226:2dff:fe0b:4311 │
-├───────────────────────────────┼────────────────────────────────────┤
-│ drill                         │ deadline has elapsed               │
-└───────────────────────────────┴────────────────────────────────────┘
+┌wikipedia.org─────────────────┬────────────────────┐
+│ Quad9 DNS                    │ 198.35.26.96       │
+├──────────────────────────────┼────────────────────┤
+│ Google DNS                   │ 198.35.26.96       │
+├──────────────────────────────┼────────────────────┤
+│ Cloudflare DNS               │ 198.35.26.96       │
+├──────────────────────────────┼────────────────────┤
+│ OS resolution                │ 198.35.26.96       │
+├──────────────────────────────┼────────────────────┤
+│ simulated nslookup           │ 198.35.26.96       │
+├──────────────────────────────┼────────────────────┤
+│ resolv.conf server[10.0.0.1] │ 198.35.26.96       │
+├──────────────────────────────┼────────────────────┤
+│ dig                          │ 198.35.26.96       │
+│                              │ 2620:0:863:ed1a::1 │
+├──────────────────────────────┼────────────────────┤
+│ drill                        │ 198.35.26.96       │
+│                              │ 2620:0:863:ed1a::1 │
+└──────────────────────────────┴────────────────────┘
+┌www.kame.net──────────────────┬────────────────────────────────────┐
+│ Google DNS                   │ 210.155.141.200                    │
+├──────────────────────────────┼────────────────────────────────────┤
+│ Quad9 DNS                    │ 210.155.141.200                    │
+├──────────────────────────────┼────────────────────────────────────┤
+│ Cloudflare DNS               │ 210.155.141.200                    │
+├──────────────────────────────┼────────────────────────────────────┤
+│ OS resolution                │ 210.155.141.200                    │
+├──────────────────────────────┼────────────────────────────────────┤
+│ simulated nslookup           │ 210.155.141.200                    │
+├──────────────────────────────┼────────────────────────────────────┤
+│ resolv.conf server[10.0.0.1] │ 210.155.141.200                    │
+├──────────────────────────────┼────────────────────────────────────┤
+│ dig                          │ mango.itojun.org.                  │
+│                              │ 210.155.141.200                    │
+│                              │ mango.itojun.org.                  │
+│                              │ 2001:2f0:0:8800:226:2dff:fe0b:4311 │
+│                              │ 2001:2f0:0:8800::1:1               │
+├──────────────────────────────┼────────────────────────────────────┤
+│ drill                        │ mango.itojun.org.                  │
+│                              │ 210.155.141.200                    │
+│                              │ mango.itojun.org.                  │
+│                              │ 2001:2f0:0:8800::1:1               │
+│                              │ 2001:2f0:0:8800:226:2dff:fe0b:4311 │
+└──────────────────────────────┴────────────────────────────────────┘
 ```
 
 ## Example: JSON
 
 ```
-$ dug --json aws.amazon.com
+$ dug --json wikipedia.org
 [
   {
     "name": "aws.amazon.com",
@@ -178,7 +170,7 @@ $ dug --json aws.amazon.com
   },
   {
     "name": "aws.amazon.com",
-    "source": "resolv.conf server[10.7.0.1]",
+    "source": "resolv.conf server[10.0.0.1]",
     "records": [
       "18.155.190.47"
     ]
@@ -200,27 +192,31 @@ $ dug --json aws.amazon.com
 ]
 
 ```
-## Example: use with `jq`
+## Example: Get only the Google DNS results for a set of hostnames
 
-Collect all unique records returned by all resolvers.
 ```
-$ dug -j aws.amazon.com | jq -r '[.[].records | select(. != null) .[]] | unique .[]'
-13.35.127.119
-2600:9000:21c4:3000:1c:a813:8513:e1c1
-2600:9000:21c4:6e00:1c:a813:8513:e1c1
-2600:9000:21c4:9200:1c:a813:8513:e1c1
-2600:9000:21c4:b400:1c:a813:8513:e1c1
-2600:9000:21c4:b600:1c:a813:8513:e1c1
-2600:9000:21c4:d600:1c:a813:8513:e1c1
-2600:9000:21c4:e400:1c:a813:8513:e1c1
-2600:9000:21c4:e600:1c:a813:8513:e1c1
-dr49lng3n1n2s.cloudfront.net.
-tp.8e49140c2-frontier.amazon.com.
+$ dug -j abc.com cbs.com nbc.com | jq -cr \
+    'map(select(.source | contains("Google")))[] | "\(.name)\t\(.records | join(" "))"'
+abc.com 65.8.161.63 65.8.161.31 65.8.161.4 65.8.161.47
+cbs.com 34.149.41.86
+nbc.com 23.67.33.102 23.67.33.74
 ```
 
-This looks busy, but here's the process:
-1. `dug` outputs an array of JSON objects
-2. `jq` extracts the `records` property of each, which is an array of IPs
-3. strip the `null` values; ie, ignore unsuccessful resolutions
-4. collect all the results into a single array
-5. strip duplicate values
+## Example: Extract only the resolved IPs with `jq`
+
+```
+$ dug -j google.com | jq -r 'map(select(.records).records) | flatten | unique .[]'
+142.250.189.174
+142.250.191.78
+142.251.46.206
+172.217.164.110
+2607:f8b0:4005:814::200e
+```
+
+This looks busy, but here's what `jq` is doing:
+1. `map(...)` &mdash; for each result in the array...
+2. `select(.records)` &mdash; select only objects where the `records` property is truthy (stripping `null`)
+3. `.records` &mdash; ...and extract the `records` property from the selected objects
+4. `flatten` the nested of arrays into a single array of all resolved IPs
+5. `unique` &mdash; remove all duplicate values
+6. `.[]` &mdash; convert the array into a sequence of strings, one per line

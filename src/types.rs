@@ -80,6 +80,27 @@ impl Resolution {
     }
 }
 
+impl fmt::Display for Resolution {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let Resolution {
+            name,
+            source,
+            result,
+        } = self;
+        // let results = match result {
+        //     DugResult::Records(recs) => {
+        //         let rec_vec = recs
+        //             .iter()
+        //             .map(|rec| format!("\t{rec}"))
+        //             .collect::<Vec<_>>();
+        //         rec_vec.join("\n")
+        //     }
+        //     DugResult::Failure(fail) => format!("\tunavailable - {fail}"),
+        // };
+        write!(f, "Name:\t{name}\nSource:\t{source}\nResult:\t{result}\n")
+    }
+}
+
 impl Serialize for Resolution {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
